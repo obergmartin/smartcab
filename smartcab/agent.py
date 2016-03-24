@@ -5,6 +5,7 @@ from simulator import Simulator
 
 from collections import OrderedDict
 import numpy as np
+import matplotlib.pyplot as plt
 
 
 class LearningAgent(Agent):
@@ -91,7 +92,7 @@ class LearningAgent(Agent):
         # Update state
         state0 = state_sense()
         s0 = make_state_vector(state0)
-        self.state = state0 
+        self.state = state0.items()
 
         
         # Select action according to your policy
@@ -140,7 +141,7 @@ class LearningAgent(Agent):
 
         # Learn policy based on state, action, reward
         state1 = state_sense()
-        self.state = state1
+        self.state = state1.items()
         s1 = make_state_vector(state1)
 
         # * Update self.q_table by:
@@ -161,15 +162,51 @@ class LearningAgent(Agent):
 
 def run():
     """Run the agent for a finite number of trials."""
+    NTRIALS = 100
 
     # Set up environment and agent
     e = Environment()  # create environment (also adds some dummy traffic)
     a = e.create_agent(LearningAgent)  # create agent
-    e.set_primary_agent(a, enforce_deadline=False)  # set agent to track
+    e.set_primary_agent(a, enforce_deadline=True)  # set agent to track
 
     # Now simulate it
     sim = Simulator(e, update_delay=.0)  # reduce update_delay to speed up simulation
-    sim.run(n_trials=10)  # press Esc or close pygame window to quit
+    sim.run(n_trials=NTRIALS)  # press Esc or close pygame window to quit
+
+    # diagnostics
+    wins = a.success
+    print wins
+    # keep track of visited (state, action) pairs
+    print "visited", a.q_visits.sum(), "of", a.q_visits.size
+    print len(a.moves)
+    print 'success in last 50:', sum(a.success[50:])
+    last_wins = [sum(wins[i:i+10]) for i in xrange(NTRIALS-9)]
+    print "extra moves:", sum([m-(d/5) for m,d in zip(a.moves[50:], a.deadlines[50:])])
+    
+    # make figures
+    plt.figure(figsize=(10,3))
+    p1, = plt.plot(a.moves, label='Path taken', linewidth=2)
+    p2, = plt.plot(np.array(a.deadlines)/5, label='Manhattan Distance', linewidth=2)#, 'r')
+    p3, = plt.plot(a.deadlines, label='Deadline', linewidth=2)
+    plt.legend(handles=[p1,p2,p3])
+    plt.xlabel('Trial Number')
+    plt.ylabel('N moves')
+
+    plt.figure(figsize=(6,2.5))
+    plt.plot(range(10,len(last_wins)+10), last_wins, linewidth=2)
+    plt.ylabel("Successes")
+    plt.xlabel("Trial Number")
+    
+    plt.figure(figsize=(6,2.5))
+    plt.plot(a.q_table.flatten(), linewidth=2)
+    plt.plot([.00015]* a.q_table.flatten().size, 'k--')
+    plt.ylabel("Q table values")
+    
+    plt.figure(figsize=(6,2.5))
+    plt.plot(a.penalties, linewidth=2)
+    plt.xlabel("Trial Number")
+    plt.ylabel("Cumulative Penalties")
+    plt.show()
 
 
 if __name__ == '__main__':
