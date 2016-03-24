@@ -68,13 +68,17 @@ class LearningAgent(Agent):
         
         def state_sense():
             i = self.env.sense(self)
+            i['waypoint'] = self.next_waypoint
+            
+            ii = OrderedDict()
+            for k in self.state_table.keys()[:-1]:
+                ii[k] = i[k]
             # use 'oncoming' state to represent the presence of ANY traffic
             if i['left'] is not None:
-                i['oncoming'] = 'forward'
+                ii['oncoming'] = 'forward'
             if i['right'] is not None:
-                i['oncoming'] = 'forward'
-            i['waypoint'] = self.next_waypoint
-            return i
+                ii['oncoming'] = 'forward'
+            return ii
 
         def make_state_vector(x):
             # only use keys in state_table for indicies in matrix
