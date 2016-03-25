@@ -41,8 +41,6 @@ class LearningAgent(Agent):
         self.penalties = []
         self.deadlines = []
 
-        # initial parameter setting
-        #self.reset()
 
     def reset(self, destination=None):
         self.planner.route_to(destination)
@@ -53,7 +51,9 @@ class LearningAgent(Agent):
 
         self.new = 1
         self.alpha = .3
+        # reduce random actions as trials progress
         self.epsilon *= .9
+
 
     def update(self, t):
         # Gather inputs
@@ -65,6 +65,7 @@ class LearningAgent(Agent):
         if self.new == 1: #new trip!
             self.deadlines.append(self.env.get_deadline(self))
             self.new = 0
+        # alpha decay to slow learning
         self.alpha *= .95 
         
         def state_sense():
@@ -72,6 +73,7 @@ class LearningAgent(Agent):
             i['waypoint'] = self.next_waypoint
             
             ii = OrderedDict()
+            # only keep states that are in state_table (last dim is action)
             for k in self.state_table.keys()[:-1]:
                 ii[k] = i[k]
             # use 'oncoming' state to represent the presence of ANY traffic
@@ -94,7 +96,6 @@ class LearningAgent(Agent):
         s0 = make_state_vector(state0)
         self.state = state0.items()
 
-        
         # Select action according to your policy
         visits = [self.q_visits.item(s0+tuple([i])) for i in range(4)]
         pos_q = [self.q_table.item(s0+tuple([i])) for i in range(4)]
@@ -118,6 +119,7 @@ class LearningAgent(Agent):
         action = self.env.valid_actions[action_ind]
         # the (state, action) pair
         sa0 = s0+tuple([action_ind])
+        # set (state, action) pair as visited
         self.q_visits.itemset(sa0, 1)
 
         # Execute action and get reward
@@ -139,11 +141,12 @@ class LearningAgent(Agent):
             self.moves.append(self.n_moves)
             self.penalties.append(self.sum_penalties)
 
-        # Learn policy based on state, action, reward
+        # Get updated state to calculate utility of Qhat(s',a')
         state1 = state_sense()
         self.state = state1.items()
         s1 = make_state_vector(state1)
 
+        # Learn policy based on state, action, reward
         # * Update self.q_table by:
         # * Qhat(s,a) <-alpha-  r + gamma * max(a')Qhat(s',a')
         # rewards for possible actions of new state
