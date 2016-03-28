@@ -10,7 +10,7 @@ https://www.pygame.org/wiki/GettingStarted
 
 ## Code
 
-Open `smartcab/agent.py` and implement `LearningAgent`. Follow `TODO`s for further instructions.
+The file `smartcab/agent.py` implements the `LearningAgent` which learns how to navigate given the restrictions imposed by `smartcab/environment.py`. Only `smartcab\agent.py` should be modified to chage the agent's behavior.
 
 ## Run
 
